@@ -41,6 +41,8 @@
 #include <sensor_msgs/JointState.h>
 #include <robotiq_s_model_control/SModel_robot_input.h>
 #include <robotiq_s_model_control/SModel_robot_output.h>
+#include <robotiq_c_model_control/CModel_robot_input.h>
+#include <robotiq_c_model_control/CModel_robot_output.h>
 
 
 const double DEG_TO_RAD = M_PI/180.0;
@@ -54,8 +56,6 @@ class Finger {
   Finger(int pos) { position = pos; }			///< Create Finger, position is @param pos
   Finger(const Finger &f) { position = f.position; }	///< Create Finger, position is taken form @param Finger
   inline double joint1() const;				///< joint_1 value for Finger
-  inline double joint2() const;				///< joint_2 value for Finger
-  inline double joint3() const;				///< joint_3 value for Finger
   int position;						///< Position of the Finger
 };
 
@@ -64,28 +64,12 @@ class Finger {
  * See Section 4.1 in https://www.cs.indiana.edu/ftp/techreports/TR711.pdf
  */
 inline double Finger::joint1() const {
-  if(0 <= position && position <= 140) return (70.0/148.0 * DEG_TO_RAD) * position;
-  else return 70.0 * DEG_TO_RAD;
+  return (45.0/255.0 * DEG_TO_RAD) * position;
+  //if(0 <= position && position <= 140) return (70.0/148.0 * DEG_TO_RAD) * position;
+  //else return 70.0 * DEG_TO_RAD;
 }
 
-/**
- * Calculate joint2 based on the Finger position. Assumes that fingers are in a non-interfering state.
- * See section 4.1 in https://www.cs.indiana.edu/ftp/techreports/TR711.pdf
- */
-inline double Finger::joint2() const {
-  if(0 <= position && position <= 140) return 0.0;
-  else if(140 < position && position <= 240) return (90.0/100.0 * DEG_TO_RAD) * (position-140.0);
-  else return 90.0 * DEG_TO_RAD;
-}
 
-/**
- * Calculate joint3 based on the Finger position. Assumes that fingers are in a non-interfering state.
- * See section 4.1 in https://www.cs.indiana.edu/ftp/techreports/TR711.pdf
- */
-inline double Finger::joint3() const {
-  if(0 <= position && position <= 140) return (-70.0/140.0 * DEG_TO_RAD) * position;
-  else return -55.0 * DEG_TO_RAD;
-}
 
 /**
  * Robotiq S-model with three Fingers.
@@ -94,62 +78,29 @@ class Robotiq3 {
  public:
   /** Default constructor for Robotiq3 */
   Robotiq3() {
-    scissor = 137;
     joint_positions.resize(11, 0.0);
     prefix = "";
   }
   
   /** Constructor for Robotiq3 */
   Robotiq3(std::string gripper_prefix) {
-    scissor = 137;
-    joint_positions.resize(11, 0.0);
+    joint_positions.resize(1, 0.0);
     prefix = gripper_prefix;    
   }
-  
-  inline double scissorJoint() const;							///< Joint value for so-called scissor joint
-  void callback(const robotiq_s_model_control::SModel_robot_input::ConstPtr &msg);	///< Callback function for "SModelRobotInput" topic
+  void callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg);	///< Callback function for "SModelRobotInput" topic
   Finger finger_left;									///< Robotiq FINGER A
-  Finger finger_right;									///< Robotiq FINGER B
-  Finger finger_middle;									///< Robotiq FINGER C
-  int scissor;										///< Scissor position
   std::string prefix;									///< Gripper prefix
   std::vector<std::string> jointNames();						///< Joint names
   std::vector<double> joint_positions;							///< Joint values
 };
 
 /**
- * Calculates joint value of the scissor joint based on the scissor position.
- */
-inline double Robotiq3::scissorJoint() const {
-  // Max range for scissor mode should be 32 degrees [http://support.robotiq.com/display/IMB/6.1+Technical+dimensions].
-  // That would mean that the limits of a single joint are -16 and +16.
-  // By actually measuring the joint angles, the limits appear to be approximately at -11 and +11.
-  if(0 <= scissor && scissor <= 15) return 11.0*DEG_TO_RAD;
-  else if(15 < scissor && scissor <= 240) return (11.0-22.0*((scissor-15.0)/225.0))*DEG_TO_RAD;
-  else return -11.0*DEG_TO_RAD;
-}
-
-/**
  * Callback function for "SModelRobotInput" topic.
  */
-void Robotiq3::callback(const robotiq_s_model_control::SModel_robot_input::ConstPtr &msg) {
-  finger_left = Finger(msg->gPOA);		// set left finger position
-  finger_right = Finger(msg->gPOB);		// set right finger position
-  finger_middle = Finger(msg->gPOC);		// set middle finger position
-  scissor = msg->gPOS;				// set scissor position
-
+void Robotiq3::callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg) {
+  finger_left = Finger(msg->gPO);
   // Set all the joint values
-  joint_positions.at(0)  =  scissorJoint();
-  joint_positions.at(1)  =  finger_left.joint1();
-  joint_positions.at(2)  =  finger_left.joint2();
-  joint_positions.at(3)  =  finger_left.joint3();
-  joint_positions.at(4)  = -joint_positions.at(0);
-  joint_positions.at(5)  =  finger_right.joint1();
-  joint_positions.at(6)  =  finger_right.joint2();
-  joint_positions.at(7)  =  finger_right.joint3();
-  joint_positions.at(8)  =  finger_middle.joint1();
-  joint_positions.at(9)  =  finger_middle.joint2();
-  joint_positions.at(10) =  finger_middle.joint3();
+  joint_positions.at(0)  =  finger_left.joint1();
 }
 
 /**
@@ -158,18 +109,8 @@ void Robotiq3::callback(const robotiq_s_model_control::SModel_robot_input::Const
 inline std::vector<std::string>  Robotiq3::jointNames() {
   // joint names for sensor_msgs::JointState message
   // order matters!
-  std::vector<std::string> joint_names(11, "");
-  joint_names.at(0).assign(prefix + "palm_finger_1_joint");
-  joint_names.at(1).assign(prefix + "finger_1_joint_1");
-  joint_names.at(2).assign(prefix + "finger_1_joint_2");
-  joint_names.at(3).assign(prefix + "finger_1_joint_3");
-  joint_names.at(4).assign(prefix + "palm_finger_2_joint");
-  joint_names.at(5).assign(prefix + "finger_2_joint_1");
-  joint_names.at(6).assign(prefix + "finger_2_joint_2");
-  joint_names.at(7).assign(prefix + "finger_2_joint_3");
-  joint_names.at(8).assign(prefix + "finger_middle_joint_1");
-  joint_names.at(9).assign(prefix + "finger_middle_joint_2");
-  joint_names.at(10).assign(prefix + "finger_middle_joint_3");
+  std::vector<std::string> joint_names(1, "");
+  joint_names.at(0).assign(prefix + "finger_joint");
   return joint_names;
 }
 
@@ -187,7 +128,7 @@ int main(int argc, char *argv[]) {
   Robotiq3 robotiq(gripper_prefix);
   
   // ROS init, nodehandle, and rate
-  ros::init(argc, argv, "s_model_joint_states");
+  ros::init(argc, argv, "c_model_joint_states");
   ros::NodeHandle nh;
   ros::Rate loop_rate(20);  // Hz
 
@@ -197,7 +138,7 @@ int main(int argc, char *argv[]) {
 
   // robotiq state message subscriber
   ros::Subscriber joint_sub;
-  joint_sub = nh.subscribe("SModelRobotInput", 10, &Robotiq3::callback, &robotiq);
+  joint_sub = nh.subscribe("CModelRobotInput", 10, &Robotiq3::callback, &robotiq);
   
   // Output JointState message
   sensor_msgs::JointState joint_msg;

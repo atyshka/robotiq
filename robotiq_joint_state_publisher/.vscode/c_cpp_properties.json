@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/alex/catkin_ws/devel/include",
+                    "/opt/ros/kinetic/include",
+                    "/home/alex/catkin_ws/src/mobility_base_navigation/mobility_base_dynamic_planner/include",
+                    "/home/alex/catkin_ws/src/mobility_base_navigation/mobility_base_path_network/include",
+                    "/home/alex/catkin_ws/src/realsense/realsense2_camera/include",
+                    "/home/alex/catkin_ws/src/robotiq/robotiq_action_server/include",
+                    "/home/alex/catkin_ws/src/robotiq/robotiq_c_model_control/include",
+                    "/home/alex/catkin_ws/src/robotiq/robotiq_ethercat/include",
+                    "/home/alex/catkin_ws/src/robotiq/robotiq_force_torque_sensor/include",
+                    "/home/alex/catkin_ws/src/robotiq/robotiq_s_model_control/include",
+                    "/home/alex/catkin_ws/src/robotiq_vision/include",
+                    "/home/alex/catkin_ws/src/universal_robot/ur_kinematics/include",
+                    "/home/alex/catkin_ws/src/ur_modern_driver/include",
+                    "/home/alex/catkin_ws/src/velodyne_simulator/velodyne_gazebo_plugins/include",
+                    "/usr/include"
+                ]
+            },
+            "includePath": [
+                "/home/alex/catkin_ws/devel/include",
+                "/opt/ros/kinetic/include",
+                "/home/alex/catkin_ws/src/mobility_base_navigation/mobility_base_dynamic_planner/include",
+                "/home/alex/catkin_ws/src/mobility_base_navigation/mobility_base_path_network/include",
+                "/home/alex/catkin_ws/src/realsense/realsense2_camera/include",
+                "/home/alex/catkin_ws/src/robotiq/robotiq_action_server/include",
+                "/home/alex/catkin_ws/src/robotiq/robotiq_c_model_control/include",
+                "/home/alex/catkin_ws/src/robotiq/robotiq_ethercat/include",
+                "/home/alex/catkin_ws/src/robotiq/robotiq_force_torque_sensor/include",
+                "/home/alex/catkin_ws/src/robotiq/robotiq_s_model_control/include",
+                "/home/alex/catkin_ws/src/robotiq_vision/include",
+                "/home/alex/catkin_ws/src/universal_robot/ur_kinematics/include",
+                "/home/alex/catkin_ws/src/ur_modern_driver/include",
+                "/home/alex/catkin_ws/src/velodyne_simulator/velodyne_gazebo_plugins/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
