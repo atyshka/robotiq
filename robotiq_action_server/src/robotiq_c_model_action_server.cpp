@@ -27,7 +27,7 @@ namespace
     result.rATR = 0x0; // No emergency release
     result.rSP = 128; // Middle ground speed
     
-    if (goal.command.position > params.max_gap_ || goal.command.position < params.min_gap_)
+    if (goal.command.position < params.max_gap_ || goal.command.position > params.min_gap_)
     {
       ROS_WARN("Goal gripper gap size is out of range(%f to %f): %f m",
                params.min_gap_, params.max_gap_, goal.command.position);
@@ -98,8 +98,8 @@ CModelGripperActionServer::CModelGripperActionServer(const std::string& name, co
   as_.registerGoalCallback(boost::bind(&CModelGripperActionServer::goalCB, this));
   as_.registerPreemptCallback(boost::bind(&CModelGripperActionServer::preemptCB, this));
 
-  state_sub_ = nh_.subscribe("input", 1, &CModelGripperActionServer::analysisCB, this);
-  goal_pub_ = nh_.advertise<GripperOutput>("output", 1);
+  state_sub_ = nh_.subscribe("CModelRobotInput", 1, &CModelGripperActionServer::analysisCB, this);
+  goal_pub_ = nh_.advertise<GripperOutput>("CModelRobotOutput", 1);
 
   as_.start();
 }

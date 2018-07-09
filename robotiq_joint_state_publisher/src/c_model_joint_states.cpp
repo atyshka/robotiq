@@ -110,7 +110,7 @@ inline std::vector<std::string>  Robotiq3::jointNames() {
   // joint names for sensor_msgs::JointState message
   // order matters!
   std::vector<std::string> joint_names(1, "");
-  joint_names.at(0).assign(prefix + "finger_joint");
+  joint_names.at(0).assign("finger_joint");
   return joint_names;
 }
 

@@ -1,0 +1,10 @@
+<launch>
+  <arg name="port" default="/dev/ttyUSB0"/>
+  <arg name="respawn" default="true"/>
+  <arg name="publish_joint_states" default="true"/>
+  
+  <node name="c_model_node" pkg="robotiq_c_model_control" type="CModelRtuNode.py" args="/dev/ttyUSB0" respawn="true"/>
+  <group if="$(arg publish_joint_states)">
+    <node name="c_model_joint_states" pkg="robotiq_joint_state_publisher" type="c_model_joint_states"/>
+  </group>
+</launch>
