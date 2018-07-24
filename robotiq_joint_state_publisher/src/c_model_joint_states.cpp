@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
   // ROS init, nodehandle, and rate
   ros::init(argc, argv, "c_model_joint_states");
   ros::NodeHandle nh;
-  ros::Rate loop_rate(20);  // Hz
+  ros::Rate loop_rate(50);  // Hz
 
   // joint state publisher
   ros::Publisher joint_pub;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     joint_msg.header.stamp = ros::Time::now();
     joint_pub.publish(joint_msg);
     ros::spinOnce();
-    loop_rate.sleep();
+    //loop_rate.sleep();
   }
 
   return 0;
