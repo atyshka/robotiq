@@ -72,41 +72,41 @@ inline double Finger::joint1() const {
 
 
 /**
- * Robotiq S-model with three Fingers.
+ * Robotiq C-model with two Fingers.
  */
-class Robotiq3 {
+class Robotiq2 {
  public:
-  /** Default constructor for Robotiq3 */
-  Robotiq3() {
-    joint_positions.resize(11, 0.0);
+  /** Default constructor for Robotiq2 */
+  Robotiq2() {
+    joint_positions.resize(1, 0.0);
     prefix = "";
   }
   
-  /** Constructor for Robotiq3 */
-  Robotiq3(std::string gripper_prefix) {
+  /** Constructor for Robotiq2 */
+  Robotiq2(std::string gripper_prefix) {
     joint_positions.resize(1, 0.0);
     prefix = gripper_prefix;    
   }
-  void callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg);	///< Callback function for "SModelRobotInput" topic
-  Finger finger_left;									///< Robotiq FINGER A
+  void callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg);	///< Callback function for "CModelRobotInput" topic
+  Finger finger;									///< Robotiq FINGER A
   std::string prefix;									///< Gripper prefix
   std::vector<std::string> jointNames();						///< Joint names
   std::vector<double> joint_positions;							///< Joint values
 };
 
 /**
- * Callback function for "SModelRobotInput" topic.
+ * Callback function for "CModelRobotInput" topic.
  */
-void Robotiq3::callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg) {
-  finger_left = Finger(msg->gPO);
+void Robotiq2::callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg) {
+  finger = Finger(msg->gPO);
   // Set all the joint values
-  joint_positions.at(0)  =  finger_left.joint1();
+  joint_positions.at(0)  =  finger.joint1();
 }
 
 /**
  * Assigns appropriate joint names.
  */
-inline std::vector<std::string>  Robotiq3::jointNames() {
+inline std::vector<std::string>  Robotiq2::jointNames() {
   // joint names for sensor_msgs::JointState message
   // order matters!
   std::vector<std::string> joint_names(1, "");
@@ -124,13 +124,13 @@ int main(int argc, char *argv[]) {
   if (argc > 1) gripper_prefix = argv[1];
   else gripper_prefix = "";
 
-  // Create Robotiq3
-  Robotiq3 robotiq(gripper_prefix);
+  // Create Robotiq2
+  Robotiq2 robotiq(gripper_prefix);
   
   // ROS init, nodehandle, and rate
   ros::init(argc, argv, "c_model_joint_states");
   ros::NodeHandle nh;
-  ros::Rate loop_rate(50);  // Hz
+  ros::Rate loop_rate(200);  // Hz
 
   // joint state publisher
   ros::Publisher joint_pub;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 
   // robotiq state message subscriber
   ros::Subscriber joint_sub;
-  joint_sub = nh.subscribe("CModelRobotInput", 10, &Robotiq3::callback, &robotiq);
+  joint_sub = nh.subscribe("CModelRobotInput", 10, &Robotiq2::callback, &robotiq);
   
   // Output JointState message
   sensor_msgs::JointState joint_msg;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     joint_msg.header.stamp = ros::Time::now();
     joint_pub.publish(joint_msg);
     ros::spinOnce();
-    //loop_rate.sleep();
+    loop_rate.sleep();
   }
 
   return 0;
