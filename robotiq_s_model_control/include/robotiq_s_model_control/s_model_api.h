@@ -1,3 +1,27 @@
+// Copyright (c) 2016, Toyota Research Institute. All rights reserved.
+
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 #ifndef S_MODEL_API_H
 #define S_MODEL_API_H
 
@@ -39,15 +63,15 @@ public:
     void setForce(const double &fA, const double &fB=0, const double &fC=0, const double &fS=0);
     void setRaw(const SModelClientBase::GripperOutput &raw);
 
-    void getPosition(double &posA, double &posB, double &posC, double &posS);
-    void getPositionCmd(double &posA, double &posB, double &posC, double &posS);
-    void getCurrent(double &curA, double &curB, double &curC, double &curS);
-    void getGripperStatus(InitializationMode &gACT,  GraspingMode &gMOD, ActionMode &gGTO, GripperStatus &gIMC, MotionStatus &gSTA);
-    void getFaultStatus(FaultStatus &gFLT);
-    void getObjectStatus(ObjectStatus &fA, ObjectStatus &fB, ObjectStatus &fC, ObjectStatus &fS);
-    void getRaw(SModelClientBase::GripperInput &raw);
+    void getPosition(double *posA, double *posB, double *posC, double *posS) const;
+    void getPositionCmd(double *posA, double *posB, double *posC, double *posS) const;
+    void getCurrent(double *curA, double *curB, double *curC, double *curS) const;
+    void getGripperStatus(InitializationMode *gACT,  GraspingMode *gMOD, ActionMode *gGTO, GripperStatus *gIMC, MotionStatus *gSTA) const;
+    void getFaultStatus(FaultStatus *gFLT) const;
+    void getObjectStatus(ObjectStatus *fA, ObjectStatus *fB, ObjectStatus *fC, ObjectStatus *fS) const;
+    void getRaw(SModelClientBase::GripperInput *raw) const;
 
-    void getCommandPos(double &posA, double &posB, double &posC, double &posS);
+    void getCommandPos(double *posA, double *posB, double *posC, double *posS) const;
 
     bool isInitialized();
     bool isReady();
@@ -77,6 +101,14 @@ private:
     double cur_to_ticks_;
 
 };
+
+template <typename T>
+inline T limit (double value)
+{
+    value = value < std::numeric_limits<T>::min() ? std::numeric_limits<T>::min() : value;
+    value = value > std::numeric_limits<T>::max() ? std::numeric_limits<T>::max() : value;
+    return static_cast<T>(value);
+}
 
 } //end namespace robotiq_s_model_control
 

@@ -1,19 +1,47 @@
+// Copyright (c) 2016, Toyota Research Institute. All rights reserved.
+
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 #include "robotiq_s_model_control/s_model_can_client.h"
 
 using namespace robotiq_s_model_control;
+
+namespace
+{
+static unsigned int kResponseOffset = 0x580;
+static unsigned int kRequestOffset = 0x600;
+}
 
 SModelCanClient::SModelCanClient(unsigned int can_id, boost::shared_ptr<can::DriverInterface> driver)
     :can_id_(can_id)
     ,driver_(driver)
 {
-    resp_header_.id = can_id + 0x580;
+    resp_header_.id = can_id + kResponseOffset;
 }
 
 SModelCanClient::~SModelCanClient()
 {
-    read_mutex.unlock();
     driver_->shutdown();
-
 }
 
 void SModelCanClient::init(ros::NodeHandle nh)
@@ -32,7 +60,7 @@ void SModelCanClient::writeOutputs(const GripperOutput &output)
     if(driver_->getState().isReady())
     {
         can::Frame serial_request;
-        serial_request.id = can_id_+0x600;
+        serial_request.id = can_id_ + kRequestOffset;
         serial_request.dlc = (unsigned char)8;
         serial_request.is_error = 0;
         serial_request.is_rtr = 0;
@@ -185,12 +213,12 @@ SModelCanClient::GripperInput SModelCanClient::readInputs() const
     if(driver_->getState().isReady())
     {
         can::Frame serial_request;
-        serial_request.id = can_id_+0x600;
-        serial_request.dlc = (unsigned char)8;
+        serial_request.id = can_id_ + kRequestOffset;
+        serial_request.dlc = static_cast<unsigned char>(8);
         serial_request.is_error = 0;
         serial_request.is_rtr = 0;
         serial_request.is_extended = 0;
-        serial_request.data.assign((unsigned char)0);
+        serial_request.data.assign(static_cast<unsigned char>(0));
 
         serial_request.data[0] = 0x4F;
         serial_request.data[1] = 0x00;
@@ -233,12 +261,11 @@ void SModelCanClient::stateCallback(const can::State &s)
     driver_->translateError(s.internal_error, err);
     if(!s.internal_error)
     {
-        std::cout<<"State: " <<err <<", asio: "<<s.error_code.message()<<std::endl;
-        //throw std::runtime_error(s.error_code.message());
+        ROS_INFO_STREAM("State: " <<err <<", asio: "<<s.error_code.message());
     }
     else
     {
-        std::cout<<"Error: "<<err<<", asio: "<<s.error_code.message()<<std::endl;
+        ROS_ERROR_STREAM("Error: "<<err<<", asio: "<<s.error_code.message());
         throw std::runtime_error(err);
     }
 

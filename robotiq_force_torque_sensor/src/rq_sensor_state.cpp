@@ -53,9 +53,10 @@ static enum rq_sensor_state_values current_state = RQ_STATE_INIT;
 ///////////////////
 //Private functions
 static INT_8 rq_state_init_com();
+static INT_8 rq_state_init_com(const std::string& ftdi_id);
 static void rq_state_read_info_high_lvl();
 static void rq_state_start_stream();
-static void rq_state_run();
+static void rq_state_run(unsigned int max_retries);
 
 //////////////////////
 //Function definitions
@@ -65,17 +66,17 @@ static void rq_state_run();
  * \brief Manages the states of the sensor driver
  * \returns -1 if an error occurs, 0 otherwise
  */
-INT_8 rq_sensor_state(void)
+INT_8 rq_sensor_state(unsigned int max_retries, const std::string& ftdi_id)
 {
 	INT_8 ret;
 
 	switch (current_state)
 	{
 	case RQ_STATE_INIT:
-		ret = rq_state_init_com();
+		ret = rq_state_init_com(ftdi_id);
 		if(ret == -1)
 		{
-			return -1;
+            return -1;
 		}
 		break;
 
@@ -88,7 +89,7 @@ INT_8 rq_sensor_state(void)
 		break;
 
 	case RQ_STATE_RUN:
-		rq_state_run();
+		rq_state_run(max_retries);
 		break;
 
 	default:
@@ -100,26 +101,82 @@ INT_8 rq_sensor_state(void)
 	return 0;
  }
 
-/**
+ /**
+ * \fn void rq_sensor_state(void)
+ * \brief Manages the states of the sensor driver
+ * \returns -1 if an error occurs, 0 otherwise
+ */
+ INT_8 rq_sensor_state(unsigned int max_retries)
+ {
+     INT_8 ret;
+
+     switch (current_state)
+     {
+     case RQ_STATE_INIT:
+         ret = rq_state_init_com();
+         if (ret == -1)
+         {
+             return -1;
+         }
+         break;
+
+     case RQ_STATE_READ_INFO:
+         rq_state_read_info_high_lvl();
+         break;
+
+     case RQ_STATE_START_STREAM:
+         rq_state_start_stream();
+         break;
+
+     case RQ_STATE_RUN:
+         rq_state_run(max_retries);
+         break;
+
+     default:
+         printf("rq_state(): Unknown error\r\n");
+         return -1;
+         break;
+
+     }
+     return 0;
+ }
+
+ /**
  * \fn void rq_state_init_com(void)
  * \brief Initialize communication with the sensor and set the
  *        next state to \ref RQ_STATE_READ_INFO
  */
-static INT_8 rq_state_init_com()
-{
-	if(rq_sensor_com() == -1)
-	{
-		return -1;
-	}
+ static INT_8 rq_state_init_com()
+ {
+     if (rq_sensor_com() == -1)
+     {
+         return -1;
+     }
 
-	current_state = RQ_STATE_READ_INFO;
-	return 0;
+     current_state = RQ_STATE_READ_INFO;
+     return 0;
+ }
+
+ /**
+ * \fn void rq_state_init_com(const std::string& ftdi_id)
+ * \brief Initialize communication with the sensor at /dev/ftdi_id
+ *        and set the next state to \ref RQ_STATE_READ_INFO
+ */
+ static INT_8 rq_state_init_com(const std::string &ftdi_id)
+ {
+     if (rq_sensor_com(ftdi_id) == -1)
+     {
+         return -1;
+     }
+
+     current_state = RQ_STATE_READ_INFO;
+     return 0;
 }
 
 /**
  * \fn void rq_state_read_info_high_lvl(void)
  * \brief Reads the high level information from the
- *        sensor and set the next state to 
+ *        sensor and set the next state to
  *        \ref RQ_STATE_START_STREAM
  */
 static void rq_state_read_info_high_lvl()
@@ -152,16 +209,27 @@ static void rq_state_start_stream()
  *        If the stream is not valid, return to state
  *        \ref RQ_STATE_INIT
  */
-static void rq_state_run()
+static void rq_state_run(unsigned int max_retries)
 {
+	static unsigned int retries = 0;
+
 	rq_com_listen_stream();
 
 	if(rq_com_get_valid_stream() == false)
 	{
+		retries++;
+		if (retries >= max_retries)
+		{
 #if defined(_WIN32)||defined(WIN32) //For Windows
-		stop_connection();
+			stop_connection();
 #endif
-		current_state = RQ_STATE_INIT;
+			current_state = RQ_STATE_INIT;
+			retries = 0;
+		}
+	}
+	else
+	{
+		retries = 0;
 	}
 }
 
@@ -183,10 +251,44 @@ float rq_state_get_received_data(UINT_8 i)
 	}
 }
 
+
+
+/**
+ * \fn bool rq_state_get_command(INT_8 command, char *value)
+ * \brief Gets the value of high level information from the sensor
+ * \param command has to be in [1, 2, 4, 8] corresponding to SerialNumber, FirmwareVersion and ProductionYear, Reset
+ * \param value return string with requested Data
+ * \return true iff command is valid
+ */
+bool rq_state_get_command(INT_8 command, INT_8 * const  value)
+{
+	/// values correnspond to constants in sensor_accessor.srv
+	switch (command) {
+	case SensorAccessor::GET_SERIAL_NUMBER:
+		rq_com_get_str_serial_number( value);
+		break;
+	case SensorAccessor::GET_FIRMWARE_VERSION:
+		rq_com_get_str_firmware_version( value);
+		break;
+	case SensorAccessor::GET_PRODUCTION_YEAR:
+		rq_com_get_str_production_year( value);
+		break;
+	case SensorAccessor::SET_ZERO:
+		rq_state_do_zero_force_flag();
+		strcpy(value, "Done");
+		break;
+	default:
+		strcpy(value, "Unsupported command_id");
+		return false;
+	}
+	return true;
+}
+
+
 /**
  * \fn int rq_state_get_command(char* name, char *value)
  * \brief Gets the value of high level information from the sensor
- * \param name the name of the information field. The value can be 
+ * \param name the name of the information field. The value can be
  *                either "SNU", "FMW" or "PYE"
  * \param value A string
  * \return 0 in case of succes, -1 otherwise

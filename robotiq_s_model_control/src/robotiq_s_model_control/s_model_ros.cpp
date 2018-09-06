@@ -1,3 +1,27 @@
+// Copyright (c) 2016, Toyota Research Institute. All rights reserved.
+
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 #include "robotiq_s_model_control/s_model_ros.h"
 
 using namespace robotiq_s_model_control;
@@ -8,21 +32,21 @@ SModelROS::SModelROS(ros::NodeHandle &nh, boost::shared_ptr<SModelAPI> driver, s
     ,desired_update_freq_(desired_update_freq)
 {
     //! advertise services
-    init_srv_ = nh_.advertiseService("init", &SModelROS::handle_init, this);
-    reset_srv_ = nh_.advertiseService("reset", &SModelROS::handle_reset, this);
-    halt_srv_ = nh_.advertiseService("halt", &SModelROS::handle_halt, this);
-    emerg_release_srv_ = nh_.advertiseService("emergency_release", &SModelROS::handle_emerg_release, this);
-    shutdown_srv_ = nh_.advertiseService("shutdown", &SModelROS::handle_shutdown, this);
+    init_srv_ = nh_.advertiseService("init", &SModelROS::handleInit, this);
+    reset_srv_ = nh_.advertiseService("reset", &SModelROS::handleReset, this);
+    halt_srv_ = nh_.advertiseService("halt", &SModelROS::handleHalt, this);
+    emerg_release_srv_ = nh_.advertiseService("emergency_release", &SModelROS::handleEmergRelease, this);
+    shutdown_srv_ = nh_.advertiseService("shutdown", &SModelROS::handleShutdown, this);
 
     //! advertise topics
     input_status_pub_ = nh.advertise<robotiq_s_model_control::SModel_robot_input>("input", 10);
 
     //! subscribers
-    output_sub_ = nh.subscribe("output", 10, &SModelROS::handle_raw_cmd, this);
+    output_sub_ = nh.subscribe("output", 10, &SModelROS::handleRawCmd, this);
 
     //! setup dynamic reconfigure
     reconfigure_.reset(new ReconfigureServer(reconfigure_mutex_, nh_));
-    ReconfigureServer::CallbackType f = boost::bind(&SModelROS::handle_reconfigure, this, _1, _2);
+    ReconfigureServer::CallbackType f = boost::bind(&SModelROS::handleReconfigure, this, _1, _2);
     reconfigure_->setCallback(f);
 
     if(joint_names.size() != 4)
@@ -33,11 +57,11 @@ SModelROS::SModelROS(ros::NodeHandle &nh, boost::shared_ptr<SModelAPI> driver, s
 
 void SModelROS::publish()
 {
-    driver_->getRaw(input_status_msg_);
+    driver_->getRaw(&input_status_msg_);
     input_status_pub_.publish(input_status_msg_);
 }
 
-bool SModelROS::handle_init(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
+bool SModelROS::handleInit(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_init");
     //! set controller state (INIT_ACTIVATION)
@@ -60,17 +84,17 @@ bool SModelROS::handle_init(std_srvs::TriggerRequest &req, std_srvs::TriggerResp
     return true;
 }
 
-bool SModelROS::handle_reset(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
+bool SModelROS::handleReset(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_reset");
     //! shutdown
-    handle_shutdown(req, resp);
+    handleShutdown(req, resp);
     //! init
-    handle_init(req, resp);
+    handleInit(req, resp);
     return true;
 }
 
-bool SModelROS::handle_halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
+bool SModelROS::handleHalt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_halt");
     //! check for activation
@@ -92,11 +116,11 @@ bool SModelROS::handle_halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResp
     return true;
 }
 
-bool SModelROS::handle_emerg_release(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
+bool SModelROS::handleEmergRelease(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_emerg_release");
     //! halt
-    handle_halt(req, resp);
+    handleHalt(req, resp);
     //! set controller state (EMERGENCY_RELEASE_ENGAGED)
     driver_->setEmergencyRelease(EMERGENCY_RELEASE_ENGAGED);
     //! wait for controller state (ERROR_AUTOMATIC_RELEASE_COMPLETED)
@@ -110,11 +134,11 @@ bool SModelROS::handle_emerg_release(std_srvs::TriggerRequest &req, std_srvs::Tr
 
 }
 
-bool SModelROS::handle_shutdown(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
+bool SModelROS::handleShutdown(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &resp)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_shutdown");
     //! halt
-    handle_halt(req, resp);
+    handleHalt(req, resp);
     //! set controller state (INIT_RESET)
     driver_->setInitialization(INIT_RESET);
     //! wait for controller state (INIT_RESET)
@@ -128,7 +152,7 @@ bool SModelROS::handle_shutdown(std_srvs::TriggerRequest &req, std_srvs::Trigger
 
 }
 
-void SModelROS::handle_reconfigure(robotiq_s_model_control::SModelConfig &config, uint32_t level)
+void SModelROS::handleReconfigure(robotiq_s_model_control::SModelConfig &config, uint32_t level)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_reconfigure");
     driver_->setInidividualControlMode((robotiq::IndividualControl)config.ind_control_fingers, (robotiq::IndividualControl)config.ind_control_scissor);
@@ -151,17 +175,17 @@ void SModelROS::handle_reconfigure(robotiq_s_model_control::SModelConfig &config
     config_ = config;
 }
 
-void SModelROS::update_config(const robotiq_s_model_control::SModelConfig &config)
+void SModelROS::updateConfig(const robotiq_s_model_control::SModelConfig &config)
 {
     reconfigure_->updateConfig(config);
 }
 
-void SModelROS::get_current_config(robotiq_s_model_control::SModelConfig &config)
+void SModelROS::getCurrentConfig(robotiq_s_model_control::SModelConfig &config)
 {
     config = config_;
 }
 
-void SModelROS::handle_raw_cmd(const robotiq_s_model_control::SModel_robot_output::ConstPtr &msg)
+void SModelROS::handleRawCmd(const robotiq_s_model_control::SModel_robot_output::ConstPtr &msg)
 {
     ROS_DEBUG_NAMED("RobotiqCANROS", "entered handle_raw_cmd");
     driver_->setRaw(*msg);
