@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(robotiq_joint_state_publisher)
+project(robotiq_2f_gripper_joint_state_publisher)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED
   roscpp
   roslib
   sensor_msgs
-  robotiq_s_model_control
-  robotiq_c_model_control
+  robotiq_2f_gripper_control
   )
 
 ###################################
@@ -19,7 +18,7 @@ find_package(catkin REQUIRED
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- CATKIN_DEPENDS roscpp roslib sensor_msgs robotiq_s_model_control robotiq_c_model_control
+ CATKIN_DEPENDS roscpp roslib sensor_msgs robotiq_2f_gripper_control
 )
 
 ###########
@@ -32,19 +31,14 @@ include_directories(
 )
 
 ## Declare a cpp executable
-add_executable(c_model_joint_states src/c_model_joint_states.cpp)
+add_executable(robotiq_2f_gripper_joint_states src/robotiq_2f_gripper_joint_states.cpp)
+
 ## Add cmake target dependencies of the executable/library
-add_dependencies(c_model_joint_states robotiq_c_model_control_generate_messages_cpp)
+add_dependencies(robotiq_2f_gripper_joint_states robotiq_2f_gripper_control_generate_messages_cpp)
+
 ## Specify libraries to link a library or executable target against
-target_link_libraries(c_model_joint_states
+target_link_libraries(robotiq_2f_gripper_joint_states
     ${catkin_LIBRARIES}
 )
 
-## Declare a cpp executable
-add_executable(s_model_joint_states src/s_model_joint_states.cpp)
-## Add cmake target dependencies of the executable/library
-add_dependencies(s_model_joint_states robotiq_s_model_control_generate_messages_cpp)
-## Specify libraries to link a library or executable target against
-target_link_libraries(s_model_joint_states
-    ${catkin_LIBRARIES}
-)
+

@@ -36,31 +36,29 @@
 # Revision $Id$
 
 """@package docstring
-Command-line interface for sending simple commands to a ROS node controlling a C-Model gripper.
-
-This serves as an example for publishing messages on the 'CModelRobotOutput' topic using the 'CModel_robot_output' msg type for sending commands to a C-Model gripper.
+This resets the gripper after power is disconnected. The reset is done once when the node is started
 """
 
-import roslib; roslib.load_manifest('robotiq_c_model_control')
+import roslib; roslib.load_manifest('robotiq_2f_gripper_control')
 import rospy
-from robotiq_c_model_control.msg import _CModel_robot_output  as outputMsg
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output  as outputMsg
 from time import sleep    
 
 def publisher():
-    """Main loop which requests new commands and publish them on the CModelRobotOutput topic."""
-    rospy.init_node('CModelReset')
+    """Publishes once to output topic to reset after power loss"""
+    rospy.init_node('robotiq2FGripperReset')
     
-    pub = rospy.Publisher('CModelRobotOutput', outputMsg.CModel_robot_output)
+    pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output)
     
     rospy.sleep(1.0)
-    command = outputMsg.CModel_robot_output();
+    command = outputMsg.Robotiq2FGripper_robot_output();
     command.rACT = 0
         
     pub.publish(command)
 
     rospy.sleep(1.0)
     
-    command = outputMsg.CModel_robot_output();
+    command = outputMsg.Robotiq2FGripper_robot_output();
     command.rACT = 1
     command.rGTO = 1
     command.rSP  = 255

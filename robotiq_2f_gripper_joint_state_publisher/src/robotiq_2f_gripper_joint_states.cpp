@@ -39,10 +39,8 @@
 #include <csignal>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-#include <robotiq_s_model_control/SModel_robot_input.h>
-#include <robotiq_s_model_control/SModel_robot_output.h>
-#include <robotiq_c_model_control/CModel_robot_input.h>
-#include <robotiq_c_model_control/CModel_robot_output.h>
+#include <robotiq_2f_gripper_control/Robotiq2FGripper_robot_input.h>
+#include <robotiq_2f_gripper_control/Robotiq2FGripper_robot_output.h>
 
 
 const double DEG_TO_RAD = M_PI/180.0;
@@ -87,7 +85,7 @@ class Robotiq2 {
     joint_positions.resize(1, 0.0);
     prefix = gripper_prefix;    
   }
-  void callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg);	///< Callback function for "CModelRobotInput" topic
+  void callback(const robotiq_2f_gripper_control::Robotiq2FGripper_robot_input::ConstPtr &msg);	///< Callback function for "Robotiq2FGripperRobotInput" topic
   Finger finger;									///< Robotiq FINGER A
   std::string prefix;									///< Gripper prefix
   std::vector<std::string> jointNames();						///< Joint names
@@ -95,9 +93,9 @@ class Robotiq2 {
 };
 
 /**
- * Callback function for "CModelRobotInput" topic.
+ * Callback function for "Robotiq2FGripperRobotInput" topic.
  */
-void Robotiq2::callback(const robotiq_c_model_control::CModel_robot_input::ConstPtr &msg) {
+void Robotiq2::callback(const robotiq_2f_gripper_control::Robotiq2FGripper_robot_input::ConstPtr &msg) {
   finger = Finger(msg->gPO);
   // Set all the joint values
   joint_positions.at(0)  =  finger.joint1();
@@ -128,7 +126,7 @@ int main(int argc, char *argv[]) {
   Robotiq2 robotiq(gripper_prefix);
   
   // ROS init, nodehandle, and rate
-  ros::init(argc, argv, "c_model_joint_states");
+  ros::init(argc, argv, "2f_gripper_joint_states");
   ros::NodeHandle nh;
   ros::Rate loop_rate(200);  // Hz
 
@@ -138,7 +136,7 @@ int main(int argc, char *argv[]) {
 
   // robotiq state message subscriber
   ros::Subscriber joint_sub;
-  joint_sub = nh.subscribe("CModelRobotInput", 10, &Robotiq2::callback, &robotiq);
+  joint_sub = nh.subscribe("Robotiq2FGripperRobotInput", 10, &Robotiq2::callback, &robotiq);
   
   // Output JointState message
   sensor_msgs::JointState joint_msg;

@@ -15,7 +15,8 @@
     <param name="min_effort" type="double" value="$(arg min_effort)" />
     <param name="max_effort" type="double" value="$(arg max_effort)" />
 
-    
+    <remap from="input" to="Robotiq2FGripperRobotInput" />
+    <remap from="output" to="Robotiq2FGripperRobotOutput" />
   </node>
 
 </launch>
