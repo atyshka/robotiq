@@ -1,0 +1,14 @@
+<launch>
+  <arg name="port" default="/dev/ttyUSB0"/>
+  <arg name="respawn" default="true"/>
+  <arg name="publish_joint_states" default="true"/>
+  <arg name="reset" default="true"/>
+  
+  <node name="robotiq_2f_gripper_rtu_node" pkg="robotiq_2f_gripper_control" type="Robotiq2FGripperRtuNode.py" args="$(arg port)" respawn="$(arg respawn)"/>
+  <group if="$(arg publish_joint_states)">
+    <node name="robotiq_2f_gripper_joint_states" pkg="robotiq_2f_gripper_joint_state_publisher" type="robotiq_2f_gripper_joint_states"/>
+  </group>
+  <group if="$(arg reset)">
+    <node name="robotiq_2f_gripper_reset_node" pkg="robotiq_2f_gripper_control" type="Robotiq2FGripperResetNode.py"/>
+  </group>
+</launch>
